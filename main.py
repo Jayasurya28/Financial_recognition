@@ -1,6 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 import re  # Using built-in re module instead of regex
 import logging
+import os
+from werkzeug.utils import secure_filename
+import PyPDF2
+from docx import Document
+from PIL import Image
+import pytesseract
+import filetype
 
 # Configure logging
 logging.basicConfig(
@@ -14,6 +21,48 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Configure upload settings
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+# Create uploads directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def extract_text_from_pdf(file_path):
+    try:
+        text = []
+        with open(file_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            for page in pdf_reader.pages:
+                text.append(page.extract_text())
+        return ' '.join(text)
+    except Exception as e:
+        logger.error(f"Error extracting text from PDF: {str(e)}")
+        return None
+
+def extract_text_from_docx(file_path):
+    try:
+        doc = Document(file_path)
+        return ' '.join([paragraph.text for paragraph in doc.paragraphs])
+    except Exception as e:
+        logger.error(f"Error extracting text from DOCX: {str(e)}")
+        return None
+
+def extract_text_from_image(file_path):
+    try:
+        image = Image.open(file_path)
+        return pytesseract.image_to_string(image)
+    except Exception as e:
+        logger.error(f"Error extracting text from image: {str(e)}")
+        return None
 
 def extract_financial_entities(text):
     try:
@@ -47,8 +96,22 @@ def extract_financial_entities(text):
                 r'\b(?:NYSE|NASDAQ|BSE|NSE|LSE|TSE|SSE):[A-Z]{1,10}\b',
                 r'\b(?:NYSE|NASDAQ|BSE|NSE|LSE|TSE|SSE)\b',
                 
-                # General company pattern - with strict rules and common word exclusions
-                r'\b(?!(?:The|A|An|This|That|Our|Your|Their|Its)\s+)(?![Cc]ompany\b|[Cc]orporation\b|[Gg]roup\b)[A-Z][a-zA-Z0-9]{2,}(?:[\s-][A-Z][a-zA-Z0-9]{2,})*(?:\s+(?:Ltd|Limited|Pvt|Private|Corporation|Company|Co|Group|Holdings|Technologies|Tech|Solutions|Industries|Enterprises|Inc|Corp|LLC|LLP|AG|SA|NV|PLC)\.?)\b'
+                # Specific company names with proper capitalization and suffixes
+                r'\b(?<!(?:the|a|an|this|that|our|your|their|its)\s+)[A-Z][a-zA-Z0-9]+(?:[- ][A-Z][a-zA-Z0-9]+)*(?:\s+(?:Inc|Corp|Corporation|Ltd|Limited|LLC|LLP|AG|SA|NV|PLC))(?![\w\s]*(?:Company|Group|Holdings|Technologies|Tech|Solutions|Industries|Enterprises))\b',
+                
+                # Company names with specific industry identifiers
+                r'\b(?<!(?:the|a|an|this|that|our|your|their|its)\s+)[A-Z][a-zA-Z0-9]+(?:[- ][A-Z][a-zA-Z0-9]+)*\s+(?:Bank|Motors|Airlines|Pharmaceuticals|Electronics|Semiconductor|Software|Systems)(?!\s+(?:Company|Group|Corporation))\b'
+            ],
+            
+            # Exclude common false positives
+            'EXCLUDE_PATTERNS': [
+                r'\b(?:the|a|an|this|that|our|your|their|its)\s+[Cc]ompany\b',
+                r'\bCompany(?:\s+(?:believes|reports|states|announced|said|mentioned|indicated|noted|disclosed|confirmed))',
+                r'\b(?:significant portion|summary|updates?|value|liquidity|vacancy)\s+(?:of|on|to)\s+the\s+Company\b',
+                r'\bthe\s+Company\'s?\b',
+                r'\bCompany\s+(?:background|profile)\b',
+                r'\b(?:smaller|larger)\s+(?:reporting\s+)?[Cc]ompany\b',
+                r'\bstock\s+[Cc]ompany\b'
             ],
             'MONEY': [
                 # Currency with optional magnitude
@@ -87,16 +150,30 @@ def extract_financial_entities(text):
             ]
         }
         
+        # First, identify text to exclude
+        exclude_spans = set()
+        for pattern in patterns['EXCLUDE_PATTERNS']:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                start, end = match.span()
+                exclude_spans.add((start, end))
+        
         # Keep track of used spans to avoid overlapping matches
         used_spans = set()
         
         # Process with regex patterns
         for entity_type, pattern_list in patterns.items():
+            if entity_type == 'EXCLUDE_PATTERNS':
+                continue
+                
             for pattern in pattern_list:
                 try:
                     for match in re.finditer(pattern, text, re.IGNORECASE):
                         start, end = match.span()
                         matched_text = match.group().strip()
+                        
+                        # Skip if this match overlaps with excluded text
+                        if any((start >= s and start < e) or (end > s and end <= e) for s, e in exclude_spans):
+                            continue
                         
                         # Check if this span overlaps with any existing spans
                         span_overlaps = any(
@@ -104,23 +181,27 @@ def extract_financial_entities(text):
                             for s, e in used_spans
                         )
                         
-                        # For MONEY type, clean up the matched text
-                        if entity_type == 'MONEY':
-                            # Remove any leading text before the actual monetary value
-                            if 'of $' in matched_text:
-                                monetary_value = re.search(r'\$\s*\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:million|billion|trillion))?\b', matched_text)
-                                if monetary_value:
-                                    matched_text = monetary_value.group()
-                            # Standardize format
-                            matched_text = matched_text.replace(' dollars', ' USD')
-                        
+                        # Skip common false positives
+                        if re.search(r'\b(?:the|a|an|this|that|our|your|their|its)\s+', matched_text, re.IGNORECASE):
+                            continue
+                            
                         if not span_overlaps and not any(e['text'].lower() == matched_text.lower() for e in entities):
+                            # Additional validation for organization names
+                            if entity_type == 'ORG':
+                                # Skip if it's a generic company reference
+                                if re.search(r'\b(?:the|a|an|this|that|our|your|their|its)\s+company\b', matched_text, re.IGNORECASE):
+                                    continue
+                                # Skip if it's just "Company" with some context
+                                if re.match(r'^Company\s+|^the\s+Company\s*$', matched_text, re.IGNORECASE):
+                                    continue
+                            
                             entities.append({
                                 "text": matched_text,
                                 "entity": entity_type,
                                 "score": 0.95 if entity_type in ['MONEY', 'PERCENT'] else 0.90
                             })
                             used_spans.add((start, end))
+                            
                 except re.error as e:
                     logger.error(f"Regex error with pattern {pattern}: {str(e)}")
                     continue
@@ -147,6 +228,67 @@ def analyze():
     
     except Exception as e:
         logger.error(f"Error in analyze endpoint: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/analyze_file', methods=['POST'])
+def analyze_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({"error": "File type not supported"}), 400
+        
+        # Save file temporarily
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        try:
+            # Detect file type using filetype
+            kind = filetype.guess(file_path)
+            if kind is None:
+                # If filetype can't detect it, try to handle as text file
+                if filename.lower().endswith('.txt'):
+                    file_type = 'text/plain'
+                elif filename.lower().endswith('.docx'):
+                    file_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                else:
+                    return jsonify({"error": "Unable to determine file type"}), 400
+            else:
+                file_type = kind.mime
+            
+            # Extract text based on file type
+            if file_type == 'application/pdf':
+                text = extract_text_from_pdf(file_path)
+            elif file_type in ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']:
+                text = extract_text_from_docx(file_path)
+            elif file_type.startswith('image/'):
+                text = extract_text_from_image(file_path)
+            elif file_type == 'text/plain':
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    text = f.read()
+            else:
+                return jsonify({"error": "Unsupported file type"}), 400
+            
+            if text is None:
+                return jsonify({"error": "Failed to extract text from file"}), 400
+            
+            # Process the extracted text
+            results = extract_financial_entities(text)
+            return jsonify(results)
+            
+        finally:
+            # Clean up: remove the temporary file
+            if os.path.exists(file_path):
+                os.remove(file_path)
+    
+    except Exception as e:
+        logger.error(f"Error in analyze_file endpoint: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':

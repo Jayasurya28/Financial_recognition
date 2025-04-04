@@ -1,7 +1,12 @@
 Flask==2.0.1
 Werkzeug==2.0.3
 Jinja2==3.1.2
-click==8.1.8
+click==8.0.3
 colorama==0.4.6
 itsdangerous==2.0.1
 MarkupSafe==3.0.2
+python-docx==0.8.11
+PyPDF2==3.0.1
+Pillow==9.5.0
+pytesseract==0.3.10
+python-magic==0.4.27
