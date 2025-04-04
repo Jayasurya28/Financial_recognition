@@ -3,246 +3,636 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Entity Recognition</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Financial Document Analyzer</title>
     <style>
+        :root {
+            --primary-color: #1a73e8;
+            --border-color: #e0e0e0;
+            --background-color: #f8f9fa;
+            --success-color: #34a853;
+            --tab-hover: #f1f3f4;
+        }
+
         body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: #202124;
         }
+
         .container {
-            max-width: 1200px;
-            margin: 2rem auto;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .card-header {
-            background-color: #0d6efd;
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 1.5rem;
-        }
-        .form-control {
-            border-radius: 10px;
-            padding: 1rem;
-            font-size: 1rem;
-            border: 2px solid #dee2e6;
-        }
-        .form-control:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-        #text-input {
-            min-height: 150px;
-        }
-        .btn-primary {
-            border-radius: 10px;
-            padding: 0.75rem 2rem;
-            font-weight: 600;
-        }
-        .result-item {
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: white;
-            border-left: 4px solid #dee2e6;
-            transition: all 0.3s ease;
-        }
-        .result-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .entity-tag {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-right: 15px;
-            font-weight: 600;
-            font-size: 0.9em;
-            min-width: 120px;
+
+        h1 {
+            color: #202124;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 500;
             text-align: center;
         }
-        .MONEY { 
-            background-color: #d1e7dd; 
-            color: #0f5132;
-            border-left-color: #0f5132;
-        }
-        .ORG { 
-            background-color: #cfe2ff; 
-            color: #084298;
-            border-left-color: #084298;
-        }
-        .DATE { 
-            background-color: #fff3cd; 
-            color: #664d03;
-            border-left-color: #664d03;
-        }
-        .PERCENT { 
-            background-color: #f8d7da; 
-            color: #842029;
-            border-left-color: #842029;
-        }
-        .FINANCIAL_METRIC { 
-            background-color: #e2e3e5; 
-            color: #41464b;
-            border-left-color: #41464b;
-        }
-        .FINANCIAL_TERM { 
-            background-color: #d3d3d3; 
-            color: #1a1e21;
-            border-left-color: #1a1e21;
-        }
-        .confidence {
-            float: right;
-            color: #666;
-            font-size: 0.9em;
-        }
-        .text-value {
-            font-family: 'Consolas', monospace;
-            font-size: 1.1em;
-            margin-left: 10px;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 1rem;
-        }
-        .loading-spinner {
-            width: 3rem;
-            height: 3rem;
-        }
-        .nav-tabs .nav-link {
-            color: #6c757d;
+
+        h2 {
+            color: #202124;
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
             font-weight: 500;
         }
-        .nav-tabs .nav-link.active {
-            color: #0d6efd;
-            font-weight: 600;
+
+        .input-section {
+            margin-bottom: 30px;
         }
-        .file-upload {
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
-            padding: 2rem;
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            color: #5f6368;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .tab:hover {
+            background-color: var(--tab-hover);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 15px;
         }
-        .file-upload:hover {
-            border-color: #0d6efd;
-            background-color: #f8f9fa;
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: var(--tab-hover);
         }
-        .file-upload input[type="file"] {
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .primary-button:hover {
+            background-color: #1557b0;
+        }
+
+        .secondary-button {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            color: #5f6368;
+        }
+
+        .secondary-button:hover {
+            background-color: var(--tab-hover);
+        }
+
+        .success-message {
+            color: var(--success-color);
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 14px;
+            padding: 8px 16px;
+            background-color: #e6f4ea;
+            border-radius: 4px;
+        }
+
+        .success-message .icon {
+            margin-right: 8px;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+            background-color: var(--background-color);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .overview-label {
+            font-weight: 500;
+            color: #5f6368;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background-color: var(--background-color);
+            color: #5f6368;
+            font-weight: 500;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: var(--background-color);
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            background-color: #e8f0fe;
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .entity-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .entity-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .entity-type {
+            background-color: #e8f0fe;
+            color: var(--primary-color);
+            padding: 4px 12px;
+            border-radius: 4px;
+            margin-right: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .entity-text {
+            flex-grow: 1;
+            font-size: 14px;
+        }
+
+        .entity-confidence {
+            color: #5f6368;
+            font-size: 14px;
+            margin-left: 12px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            justify-content: flex-end;
+        }
+
+        .feedback-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: var(--background-color);
+            border-radius: 8px;
+            color: #5f6368;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .loading {
             display: none;
+            text-align: center;
+            padding: 20px;
+            color: #5f6368;
         }
-        .file-info {
-            margin-top: 1rem;
-            font-size: 0.9em;
-            color: #6c757d;
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--background-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
         }
-        .file-preview {
-            max-width: 100%;
-            max-height: 300px;
-            margin-top: 1rem;
-            border-radius: 5px;
-            display: none;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .entities-table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        .entities-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--border-color);
+        }
+
+        .entities-table th,
+        .entities-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            min-width: 150px;
+        }
+
+        .entities-table th {
+            background-color: var(--background-color);
+            font-weight: 500;
+            color: #5f6368;
+        }
+
+        .entities-table td {
+            vertical-align: top;
+        }
+
+        .entity-cell {
+            display: block;
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .entity-cell:last-child {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h1 class="h3 mb-0">Financial Entity Recognition</h1>
-            </div>
-            <div class="card-body">
-                <ul class="nav nav-tabs mb-3" id="inputTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-panel" type="button" role="tab">Enter Text</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-panel" type="button" role="tab">Upload File</button>
-                    </li>
-                </ul>
-                
-                <div class="tab-content" id="inputTabsContent">
-                    <!-- Text Input Panel -->
-                    <div class="tab-pane fade show active" id="text-panel" role="tabpanel">
-                        <form id="text-form">
-                            <div class="mb-4">
-                                <label for="text-input" class="form-label">Enter financial text:</label>
-                                <textarea class="form-control" id="text-input" rows="6" placeholder="Example: In Q3 2023, Goldman Sachs reported a net profit of $12.6 billion..."></textarea>
-                            </div>
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="submit" class="btn btn-primary">Analyze Text</button>
-                            </div>
-                        </form>
-                    </div>
+        <h1>Financial Document Analyzer</h1>
 
-                    <!-- File Upload Panel -->
-                    <div class="tab-pane fade" id="file-panel" role="tabpanel">
-                        <form id="file-form">
-                            <div class="mb-4">
-                                <div class="file-upload" id="drop-zone">
-                                    <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" />
-                                    <div class="upload-content">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#0d6efd" class="bi bi-cloud-upload mb-3" viewBox="0 0 16 16">
-                                            <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
-                                            <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3z"/>
-                                        </svg>
-                                        <h5>Drag & Drop or Click to Upload</h5>
-                                        <p class="text-muted">Supported formats: PDF, Word, Text, Images</p>
-                                    </div>
-                                    <div class="file-info" style="display: none;">
-                                        Selected file: <span id="file-name"></span>
-                                        <button type="button" class="btn btn-link text-danger p-0 ms-2" id="remove-file">Remove</button>
-                                    </div>
-                                    <img id="image-preview" class="file-preview" />
-                                </div>
-                            </div>
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="submit" class="btn btn-primary" disabled>Analyze File</button>
-                            </div>
-                        </form>
-                    </div>
+        <div class="input-section">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('text')">Enter Text</div>
+                <div class="tab" onclick="switchTab('file')">Upload Document</div>
+            </div>
+
+            <div id="textTab" class="tab-content active">
+                <textarea class="text-input" placeholder="Enter financial text here...&#10;Example: In Q2 2023, Apple Inc reported revenue of $81.8 billion and operating expenses of $14.2 billion."></textarea>
+                <button class="button primary-button" onclick="analyzeText()">Analyze Text</button>
+            </div>
+
+            <div id="fileTab" class="tab-content">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📄</div>
+                    <p>Drag & drop your document here or click to browse</p>
+                    <p style="color: #5f6368; font-size: 14px;">Supported formats: PDF, Word, Text, Images</p>
                 </div>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png">
             </div>
         </div>
 
         <div class="loading">
-            <div class="spinner-border loading-spinner text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+            <div class="loading-spinner"></div>
+            <p>Processing document...</p>
         </div>
 
         <div id="results" style="display: none;">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h2 class="h4 mb-0">Detected Entities:</h2>
-                </div>
-                <div class="card-body" id="entities-list">
-                    <!-- Results will be displayed here -->
-                </div>
+            <div class="success-message">
+                <span class="icon">✓</span>
+                <span id="successText">Document processed successfully</span>
+            </div>
+
+            <h2>Document Overview</h2>
+            <div class="overview-grid">
+                <div class="overview-label">Company:</div>
+                <div id="companyName"></div>
+                <div class="overview-label">Period:</div>
+                <div id="period"></div>
+                <div class="overview-label">Summary:</div>
+                <div id="summary"></div>
+            </div>
+
+            <h2>AI Insights & Tags</h2>
+            <div class="tags" id="tags"></div>
+
+            <h2>Detected Trends</h2>
+            <div class="trends" id="trends"></div>
+
+            <h2>Detected Entities</h2>
+            <div class="entities-table-wrapper">
+                <table class="entities-table">
+                    <thead>
+                        <tr>
+                            <th>Money</th>
+                            <th>Date</th>
+                            <th>Organization</th>
+                            <th>Financial Metric</th>
+                            <th>Financial Term</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entityTableBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // File Upload Handling
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const fileInfo = document.querySelector('.file-info');
-        const fileName = document.getElementById('file-name');
-        const removeFile = document.getElementById('remove-file');
-        const imagePreview = document.getElementById('image-preview');
-        const fileForm = document.getElementById('file-form');
-        const analyzeFileBtn = fileForm.querySelector('button[type="submit"]');
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'text') {
+                document.querySelector('.tab:first-child').classList.add('active');
+                document.getElementById('textTab').classList.add('active');
+            } else {
+                document.querySelector('.tab:last-child').classList.add('active');
+                document.getElementById('fileTab').classList.add('active');
+            }
+        }
 
+        async function analyzeText() {
+            const text = document.querySelector('.text-input').value.trim();
+            if (!text) {
+                alert('Please enter some text to analyze.');
+                return;
+            }
+
+            document.querySelector('.loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('successText').textContent = 'Text analyzed successfully';
+                document.getElementById('results').style.display = 'block';
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error analyzing text: ' + error.message);
+            } finally {
+                document.querySelector('.loading').style.display = 'none';
+            }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.querySelector('.loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/analyze_file', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('successText').textContent = 'Document uploaded successfully';
+                    document.getElementById('results').style.display = 'block';
+                    displayResults(data);
+                } else {
+                    alert(data.error || 'Error processing file');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing file');
+            } finally {
+                document.querySelector('.loading').style.display = 'none';
+            }
+        });
+
+        function displayResults(data) {
+            // Clear previous results
+            document.getElementById('entityTableBody').innerHTML = '';
+            document.getElementById('tags').innerHTML = '';
+            document.getElementById('trends').innerHTML = '';
+
+            // Group entities by type
+            const groupedEntities = {};
+            data.forEach(entity => {
+                if (!groupedEntities[entity.entity]) {
+                    groupedEntities[entity.entity] = [];
+                }
+                groupedEntities[entity.entity].push(entity);
+            });
+
+            // Format money values and dates
+            function formatMoney(value) {
+                // First, check if the value already contains words like billion, trillion
+                if (value.match(/billion|trillion|million/i)) {
+                    return value;
+                }
+
+                // Remove $ and any commas and convert to number
+                const num = parseFloat(value.replace(/[$,]/g, ''));
+                
+                // Handle thousand values
+                if (num >= 1000 && num < 1000000) {
+                    return `$${(num / 1000).toFixed(1)} thousand`;
+                }
+                // Handle million values
+                else if (num >= 1000000 && num < 1000000000) {
+                    return `$${(num / 1000000).toFixed(1)} million`;
+                }
+                // Handle billion values
+                else if (num >= 1000000000 && num < 1000000000000) {
+                    return `$${(num / 1000000000).toFixed(1)} billion`;
+                }
+                // Handle trillion values
+                else if (num >= 1000000000000) {
+                    return `$${(num / 1000000000000).toFixed(1)} trillion`;
+                }
+                // Handle regular values
+                else {
+                    return `$${num.toFixed(2)}`;
+                }
+            }
+
+            function formatDate(dateStr) {
+                const months = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                
+                // Try to parse the date
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+                }
+                
+                // If just a year is provided
+                if (/^\d{4}$/.test(dateStr)) {
+                    return dateStr;
+                }
+                
+                // If month abbreviation and year
+                const monthMatch = dateStr.match(/^([A-Za-z]{3})\s*(\d{4})$/);
+                if (monthMatch) {
+                    const monthIndex = months.findIndex(m => m.substring(0, 3).toLowerCase() === monthMatch[1].toLowerCase());
+                    if (monthIndex !== -1) {
+                        return `${months[monthIndex]} ${monthMatch[2]}`;
+                    }
+                }
+                
+                return dateStr;
+            }
+
+            // Create table rows
+            const tableBody = document.getElementById('entityTableBody');
+            const maxRows = Math.max(
+                (groupedEntities['MONEY'] || []).length,
+                (groupedEntities['DATE'] || []).length,
+                (groupedEntities['ORG'] || []).length,
+                (groupedEntities['FINANCIAL_METRIC'] || []).length,
+                (groupedEntities['FINANCIAL_TERM'] || []).length
+            );
+
+            for (let i = 0; i < maxRows; i++) {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${groupedEntities['MONEY']?.[i] ? `<span class="entity-cell">${formatMoney(groupedEntities['MONEY'][i].text)}</span>` : ''}</td>
+                    <td>${groupedEntities['DATE']?.[i] ? `<span class="entity-cell">${formatDate(groupedEntities['DATE'][i].text)}</span>` : ''}</td>
+                    <td>${groupedEntities['ORG']?.[i] ? `<span class="entity-cell">${groupedEntities['ORG'][i].text}</span>` : ''}</td>
+                    <td>${groupedEntities['FINANCIAL_METRIC']?.[i] ? `<span class="entity-cell">${groupedEntities['FINANCIAL_METRIC'][i].text}</span>` : ''}</td>
+                    <td>${groupedEntities['FINANCIAL_TERM']?.[i] ? `<span class="entity-cell">${groupedEntities['FINANCIAL_TERM'][i].text}</span>` : ''}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+
+            // Add tags based on entity types
+            const tags = document.getElementById('tags');
+            Object.keys(groupedEntities).forEach(type => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = type;
+                tags.appendChild(tag);
+            });
+
+            // Update overview section
+            if (groupedEntities['ORG'] && groupedEntities['ORG'][0]) {
+                document.getElementById('companyName').textContent = groupedEntities['ORG'][0].text;
+            }
+            if (groupedEntities['DATE'] && groupedEntities['DATE'][0]) {
+                document.getElementById('period').textContent = groupedEntities['DATE'][0].text;
+            }
+
+            // Generate summary
+            let summary = '';
+            if (groupedEntities['MONEY']) {
+                const moneyEntities = groupedEntities['MONEY'];
+                summary = `Financial analysis shows ${moneyEntities.length} monetary values identified`;
+                if (groupedEntities['ORG']) {
+                    summary += ` related to ${groupedEntities['ORG'].length} organizations`;
+                }
+                summary += '.';
+            }
+            document.getElementById('summary').textContent = summary;
+
+            // Add trends based on data
+            const trends = document.getElementById('trends');
+            if (groupedEntities['MONEY'] || groupedEntities['PERCENT']) {
+                trends.innerHTML = `
+                    <div class="trend-item">• Identified ${Object.keys(groupedEntities).length} different types of financial entities</div>
+                    <div class="trend-item">• Found ${groupedEntities['MONEY'] ? groupedEntities['MONEY'].length : 0} monetary values</div>
+                `;
+            }
+        }
+
+        // Add drag and drop support
+        const uploadArea = document.querySelector('.upload-area');
+        
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+            uploadArea.addEventListener(eventName, preventDefaults, false);
         });
 
         function preventDefaults(e) {
@@ -251,154 +641,30 @@
         }
 
         ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
+            uploadArea.addEventListener(eventName, highlight, false);
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
+            uploadArea.addEventListener(eventName, unhighlight, false);
         });
 
         function highlight(e) {
-            dropZone.classList.add('border-primary');
+            uploadArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+            uploadArea.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--tab-hover');
         }
 
         function unhighlight(e) {
-            dropZone.classList.remove('border-primary');
+            uploadArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
+            uploadArea.style.backgroundColor = 'white';
         }
 
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        dropZone.addEventListener('drop', handleDrop, false);
-        fileInput.addEventListener('change', handleFileSelect);
-        removeFile.addEventListener('click', clearFile);
+        uploadArea.addEventListener('drop', handleDrop, false);
 
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const file = dt.files[0];
-            handleFile(file);
-        }
-
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            handleFile(file);
-        }
-
-        function handleFile(file) {
-            if (!file) return;
-
-            // Show file info
-            fileInfo.style.display = 'block';
-            fileName.textContent = file.name;
-            analyzeFileBtn.disabled = false;
-
-            // Preview if it's an image
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                imagePreview.style.display = 'none';
-            }
-        }
-
-        function clearFile() {
-            fileInput.value = '';
-            fileInfo.style.display = 'none';
-            imagePreview.style.display = 'none';
-            analyzeFileBtn.disabled = true;
-        }
-
-        // Form Submission Handling
-        document.getElementById('text-form').addEventListener('submit', handleTextSubmit);
-        document.getElementById('file-form').addEventListener('submit', handleFileSubmit);
-
-        async function handleTextSubmit(e) {
-            e.preventDefault();
-            const text = document.getElementById('text-input').value.trim();
-            
-            if (!text) {
-                alert('Please enter some text to analyze.');
-                return;
-            }
-
-            await analyzeContent('text', { text });
-        }
-
-        async function handleFileSubmit(e) {
-            e.preventDefault();
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert('Please select a file to analyze.');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            await analyzeContent('file', formData);
-        }
-
-        async function analyzeContent(type, data) {
-            document.querySelector('.loading').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
-            try {
-                const endpoint = type === 'text' ? '/analyze' : '/analyze_file';
-                const options = {
-                    method: 'POST',
-                    headers: type === 'text' ? { 'Content-Type': 'application/json' } : {},
-                    body: type === 'text' ? JSON.stringify(data) : data
-                };
-
-                const response = await fetch(endpoint, options);
-                const result = await response.json();
-                
-                if (response.ok) {
-                    displayResults(result);
-                } else {
-                    alert(result.error || 'An error occurred while analyzing the content.');
-                }
-            } catch (error) {
-                alert('An error occurred while communicating with the server.');
-                console.error('Error:', error);
-            } finally {
-                document.querySelector('.loading').style.display = 'none';
-            }
-        }
-
-        function displayResults(entities) {
-            const resultsDiv = document.getElementById('entities-list');
-            
-            if (entities.length === 0) {
-                resultsDiv.innerHTML = '<div class="alert alert-info">No financial entities found in the content.</div>';
-                document.getElementById('results').style.display = 'block';
-                return;
-            }
-
-            // Sort entities by type and confidence
-            entities.sort((a, b) => {
-                if (a.entity === b.entity) {
-                    return b.score - a.score;
-                }
-                return a.entity.localeCompare(b.entity);
-            });
-
-            // Display results
-            resultsDiv.innerHTML = entities.map(entity => `
-                <div class="result-item ${entity.entity}">
-                    <span class="entity-tag ${entity.entity}">${entity.entity}</span>
-                    <span class="text-value">${entity.text}</span>
-                    <span class="confidence">Confidence: ${entity.score.toFixed(2)}</span>
-                </div>
-            `).join('');
-
-            document.getElementById('results').style.display = 'block';
+            document.getElementById('fileInput').files = dt.files;
+            document.getElementById('fileInput').dispatchEvent(new Event('change'));
         }
     </script>
 </body>

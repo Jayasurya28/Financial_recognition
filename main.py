@@ -78,7 +78,7 @@ def extract_financial_entities(text):
                 r'\b(?:Apple|Microsoft|Amazon|Alphabet|Google|Meta|Facebook|Netflix|Tesla|NVIDIA|Intel|AMD|Cisco|Oracle|Salesforce|Adobe|IBM|Dell|HP|Lenovo|Samsung|Sony|LG|Huawei|Xiaomi|Twitter|LinkedIn|PayPal|Square|Stripe|Uber|Lyft|Airbnb|DoorDash)\b',
                 
                 # Major Industrial and Retail
-                r'\b(?:General Electric|Boeing|Lockheed Martin|Raytheon|Northrop Grumman|Ford|General Motors|Toyota|Volkswagen|BMW|Mercedes-Benz|Honda|Hyundai|Walmart|Target|Costco|Home Depot|Lowe\'s|CVS|Walgreens|McDonald\'s|Starbucks|Coca-Cola|PepsiCo|Procter & Gamble|Johnson & Johnson|Pfizer|Merck|Nike|Adidas|Disney|AT&T|Verizon|Comcast|ExxonMobil|Chevron|Shell|BP)\b',
+                r'\b(?:General Electric|Boeing|Lockheed Martin|Raytheon|Northrop Grumman|Ford|General Motors|Toyota|Volkswagen|BMW|Mercedes-Benz|Honda|Hyundai|Walmart|Target|Costco|Home Depot|Lowe\'s|CVS|Walgreens|McDonald\'s|Starbucks|Coca-Cola|PepsiCo|Procter & Gamble|Johnson & Johnson|Pfizer|Merck|Nike|Adidas|Disney|AT&T|Verizon|Comcast|ExxonMobil|Chevron|Shell(?!\s*script)|BP)\b',
                 
                 # Investment firms and Asset Managers
                 r'\b(?:Berkshire Hathaway|KKR|Blackstone|Carlyle Group|Apollo Global|TPG|Bain Capital|Wellington Management|PIMCO|Bridgewater Associates|Renaissance Technologies|Two Sigma|Citadel|Point72|AQR Capital|DE Shaw|Tiger Global|Sequoia Capital|Andreessen Horowitz|Accel Partners)\b',
@@ -93,8 +93,10 @@ def extract_financial_entities(text):
                 r'\b(?:McKinsey|Boston Consulting Group|Bain & Company|Deloitte|PwC|EY|KPMG|Accenture|IBM Consulting|Capgemini|Cognizant|Booz Allen Hamilton|Oliver Wyman)\b',
                 
                 # Stock exchange related
-                r'\b(?:NYSE|NASDAQ|BSE|NSE|LSE|TSE|SSE):[A-Z]{1,10}\b',
-                r'\b(?:NYSE|NASDAQ|BSE|NSE|LSE|TSE|SSE)\b',
+                r'\b(?:NYSE|NASDAQ|BSE|NSE|LSE|TSE|SSE)(?::[A-Z]{1,10})?\b',
+                
+                # Add case-sensitive matches for potentially ambiguous terms
+                r'\b(?:Shell|NSE|BSE|Target)\b(?!\s+(?:script|file|command|variable|path|directory))',
                 
                 # Specific company names with proper capitalization and suffixes
                 r'\b(?<!(?:the|a|an|this|that|our|your|their|its)\s+)[A-Z][a-zA-Z0-9]+(?:[- ][A-Z][a-zA-Z0-9]+)*(?:\s+(?:Inc|Corp|Corporation|Ltd|Limited|LLC|LLP|AG|SA|NV|PLC))(?![\w\s]*(?:Company|Group|Holdings|Technologies|Tech|Solutions|Industries|Enterprises))\b',

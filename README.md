@@ -1,16 +1,91 @@
-# Financial Entity Recognition System
+# Financial Document Analyzer
 
-A web application that automatically detects and extracts financial information from text, including company names, monetary values, dates, and financial metrics.
+A web-based application that analyzes financial documents and text to extract key financial information, entities, and insights.
 
-## What It Does
+## Features
 
-✨ Automatically detects:
-- 🏢 Organizations (e.g., "Goldman Sachs", "JPMorgan Chase")
-- 💰 Money amounts (e.g., "$12.6 billion", "$350")
-- 📅 Dates (e.g., "Q3 2023", "FY2022")
-- 📊 Percentages (e.g., "15%", "up 12%")
-- 📈 Financial Metrics (e.g., "P/E ratio", "EBITDA")
-- 📑 Financial Terms (e.g., "balance sheet", "dividend")
+- **Dual Input Methods**:
+  - Text Analysis: Direct input of financial text
+  - Document Upload: Support for PDF, Word, Text, and Image files
+
+- **Entity Detection**:
+  - Money Values (with automatic formatting to million/billion/trillion)
+  - Dates
+  - Organizations
+  - Financial Metrics
+  - Financial Terms
+
+- **Clean Modern Interface**:
+  - Tabbed interface for easy switching between input methods
+  - Drag-and-drop file upload support
+  - Responsive design
+
+## Setup
+
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Required Dependencies**:
+   - Flask
+   - PyPDF2 (for PDF processing)
+   - python-docx (for Word documents)
+   - Pillow (for image processing)
+   - pytesseract (for OCR)
+   - python-magic (for file type detection)
+
+3. **Run the Application**:
+   ```bash
+   python main.py
+   ```
+   The application will be available at `http://127.0.0.1:5000`
+
+## Usage
+
+### Text Analysis
+1. Open the application in your browser
+2. Enter financial text in the text area
+3. Click "Analyze Text"
+4. View the extracted entities in the organized table format
+
+### Document Upload
+1. Switch to the "Upload Document" tab
+2. Either drag & drop your document or click to browse
+3. Supported formats: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG
+4. The system will automatically process and display results
+
+## Output Format
+
+The analysis results are displayed in several sections:
+
+1. **Document Overview**:
+   - Company name
+   - Time period
+   - Summary of findings
+
+2. **AI Insights & Tags**:
+   - Visual tags showing detected entity types
+
+3. **Detected Entities Table**:
+   - Money (formatted with million/billion/trillion)
+   - Dates (formatted with months where applicable)
+   - Organizations
+   - Financial Metrics
+   - Financial Terms
+
+## Example
+
+Input Text:
+```text
+In Q2 2023, Apple Inc reported revenue of $81.8 billion and operating expenses of $14.2 billion.
+```
+
+Output will show:
+- Money: "$81.8 billion", "$14.2 billion"
+- Date: "Q2 2023"
+- Organization: "Apple Inc"
+- Financial Terms: "revenue", "operating expenses"
 
 ## Setup Guide (Windows)
 
