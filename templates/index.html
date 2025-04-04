@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Entity Recognition</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .result-item {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        .result-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .entity-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-right: 15px;
+            font-weight: 600;
+            font-size: 0.9em;
+            min-width: 100px;
+            text-align: center;
+        }
+        .ORG { 
+            background-color: #e3f2fd; 
+            color: #1565c0;
+            border-left-color: #1565c0;
+        }
+        .MONEY { 
+            background-color: #e8f5e9; 
+            color: #2e7d32;
+            border-left-color: #2e7d32;
+        }
+        .DATE { 
+            background-color: #fff3e0; 
+            color: #ef6c00;
+            border-left-color: #ef6c00;
+        }
+        .PERCENT { 
+            background-color: #f3e5f5; 
+            color: #6a1b9a;
+            border-left-color: #6a1b9a;
+        }
+        .METRIC { 
+            background-color: #e0f2f1; 
+            color: #00695c;
+            border-left-color: #00695c;
+        }
+        .score {
+            float: right;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .text-value {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Financial Entity Recognition</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <label for="text-input" class="form-label">Enter financial text:</label>
+                <textarea id="text-input" class="form-control mb-3" rows="4" placeholder="Example: Goldman Sachs reported a net profit of $12.6 billion in 2023, with shares trading at $350."></textarea>
+                <button onclick="analyzeText()" class="btn btn-primary">Analyze Text</button>
+            </div>
+        </div>
+
+        <div id="results" class="mt-4">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        async function analyzeText() {
+            const text = document.getElementById('text-input').value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!text.trim()) {
+                resultsDiv.innerHTML = '<div class="alert alert-warning">Please enter some text to analyze.</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Analyzing text...</p></div>';
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+                
+                const results = await response.json();
+                
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<div class="alert alert-info">No financial entities found in the text.</div>';
+                    return;
+                }
+                
+                // Display results
+                resultsDiv.innerHTML = '<h3 class="mb-4">Detected Entities:</h3>';
+                results.forEach(entity => {
+                    resultsDiv.innerHTML += `
+                        <div class="result-item ${entity.entity.toLowerCase()}">
+                            <span class="entity-tag ${entity.entity}">${entity.entity}</span>
+                            <span class="text-value">${entity.text}</span>
+                            <span class="score">Confidence: ${entity.score.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="alert alert-danger">Error analyzing text. Please try again.</div>';
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
